@@ -10,10 +10,13 @@ public class SchedulingDisco extends Thread {
 	private Testina testina;
 	private ArrayList<RichiestaIO> listaRichieste;
 	private AlgoritmiTypes algoritmo;
+	private RichiestaIO richiestaPiuVicina;
 	
-	public SchedulingDisco(File richieste, AlgoritmiTypes algoritmo) {
-		listaRichieste = new ArrayList<RichiestaIO>();
+	public SchedulingDisco(Testina testina, AlgoritmiTypes algoritmo) {
+		this.testina = testina;
 		this.algoritmo = algoritmo;
+		listaRichieste = new ArrayList<RichiestaIO>();
+		richiestaPiuVicina = null;
 		this.start();
 	}
 	
@@ -22,61 +25,197 @@ public class SchedulingDisco extends Thread {
 	}
 	
 	public void run() {
-		while (!listaRichieste.isEmpty()) {
+		
 			synchronized (this) {
+
+				int posizioneCorrenteTestina = testina.getInizio();
+
 				switch (algoritmo) {
 				case FCFS:
-					for (RichiestaIO tempRichiesta : listaRichieste) {
-						tempRichiesta.start();
-						try {
-							tempRichiesta.join();
-						} catch (InterruptedException e) {
-							e.printStackTrace();
+					while (!listaRichieste.isEmpty()) {
+
+						for (RichiestaIO tempRichiesta : listaRichieste) {
+							tempRichiesta.start();
+							try {
+								tempRichiesta.join();
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
 						}
-						listaRichieste.remove(tempRichiesta);
 					}
 					break;
 					
 				case SSTF: 
-					RichiestaIO richiestaPiuVicina = listaRichieste.get(0);
-					int posizioneCorrenteTestina = testina.getInizio();
-					int distanzaMinore = Math.abs(posizioneCorrenteTestina-richiestaPiuVicina.getCilindroRichiesto());
+					while (!listaRichieste.isEmpty()) {
 
-					for (RichiestaIO tempRichiesta : listaRichieste) {
-						if (Math.abs(posizioneCorrenteTestina-tempRichiesta.getCilindroRichiesto()) < distanzaMinore) {
-							distanzaMinore = Math.abs(posizioneCorrenteTestina-tempRichiesta.getCilindroRichiesto());
-							richiestaPiuVicina = tempRichiesta;
+						richiestaPiuVicina = trovaRichiestaPiùVicina(posizioneCorrenteTestina);
+						
+						posizioneCorrenteTestina = richiestaPiuVicina.getCilindroRichiesto();
+						
+						richiestaPiuVicina.start();
+						try {
+							richiestaPiuVicina.join();
+						} catch (InterruptedException e) {
+							e.printStackTrace();
 						}
+						listaRichieste.remove(richiestaPiuVicina);
 					}
-					richiestaPiuVicina.start();
-					try {
-						richiestaPiuVicina.join();
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-					listaRichieste.remove(richiestaPiuVicina);
 					break;
 					
 				default:
-					if (testina.getDirezione().equals("Destra")) {
-						switch (algoritmo) {
-						case SCAN:
+					while (!listaRichieste.isEmpty()) {
+						while (testina.getDirezione().equals("Destra")) {
+							switch (algoritmo) {
 							
-							break;
-
-						default:
-							break;
+							case SCAN:	
+								richiestaPiuVicina = trovaRichiestaPiùVicinaDestra(posizioneCorrenteTestina);
+								
+								if (richiestaPiuVicina == null) {
+									System.out.print("100 ");
+									testina.setDirezione("Sinistra");
+									break;
+								}
+								
+								richiestaPiuVicina.start();
+								try {
+									richiestaPiuVicina.join();
+								} catch (InterruptedException e) {
+									e.printStackTrace();
+								}
+								listaRichieste.remove(richiestaPiuVicina);
+								break;
+								
+							case LOOK:
+								richiestaPiuVicina = trovaRichiestaPiùVicinaDestra(posizioneCorrenteTestina);
+								
+								if (richiestaPiuVicina == null) {
+									testina.setDirezione("Sinistra");
+									break;
+								}
+								
+								richiestaPiuVicina.start();
+								try {
+									richiestaPiuVicina.join();
+								} catch (InterruptedException e) {
+									e.printStackTrace();
+								}
+								listaRichieste.remove(richiestaPiuVicina);
+								break;
+	
+							default:
+								System.out.println("Algoritmo non esistente");
+								break;
+							}
 						}
-					}
-					else {
 						
-					}
-					break;
+						while (testina.getDirezione().equals("Sinistra")) {
+							switch (algoritmo) {
+							
+							case SCAN:	
+								richiestaPiuVicina = trovaRichiestaPiùVicinaSinistra(posizioneCorrenteTestina);
+								
+								if (richiestaPiuVicina == null) {
+									System.out.print("0 ");
+									testina.setDirezione("Destra");
+									break;
+								}
+								
+								richiestaPiuVicina.start();
+								try {
+									richiestaPiuVicina.join();
+								} catch (InterruptedException e) {
+									e.printStackTrace();
+								}
+								listaRichieste.remove(richiestaPiuVicina);
+								break;
+								
+							case LOOK:
+								richiestaPiuVicina = trovaRichiestaPiùVicinaSinistra(posizioneCorrenteTestina);
+								
+								if (richiestaPiuVicina == null) {
+									testina.setDirezione("Destra");
+									break;
+								}
+								
+								richiestaPiuVicina.start();
+								try {
+									richiestaPiuVicina.join();
+								} catch (InterruptedException e) {
+									e.printStackTrace();
+								}
+								listaRichieste.remove(richiestaPiuVicina);
+								break;
+	
+							default:
+								System.out.println("Algoritmo non esistente");
+								break;
+							}
+						}
+
 				}
 			}
 			
 		}
 		
+	}
+	
+	public RichiestaIO trovaRichiestaPiùVicina(int posizioneCorrenteTestina) {
+		RichiestaIO richiestaPiuVicina = listaRichieste.get(0);
+		int distanzaMinore = Math.abs(posizioneCorrenteTestina-richiestaPiuVicina.getCilindroRichiesto());
+
+		for (RichiestaIO tempRichiesta : listaRichieste) {
+			if (Math.abs(posizioneCorrenteTestina-tempRichiesta.getCilindroRichiesto()) < distanzaMinore) {
+				distanzaMinore = Math.abs(posizioneCorrenteTestina-tempRichiesta.getCilindroRichiesto());
+				richiestaPiuVicina = tempRichiesta;
+			}
+		}
+		return richiestaPiuVicina;
+	}
+	
+	public RichiestaIO trovaRichiestaPiùVicinaDestra(int posizioneCorrenteTestina) {
+		int count=0;
+		richiestaPiuVicina = null;
+		for (RichiestaIO tempRichiesta : listaRichieste) {
+			if (tempRichiesta.getCilindroRichiesto() > posizioneCorrenteTestina) {
+				richiestaPiuVicina = tempRichiesta;
+				count++;
+				break;
+			}
+		}
+		if (count == 0) return null;
+		
+		int distanzaMinore = Math.abs(posizioneCorrenteTestina-richiestaPiuVicina.getCilindroRichiesto());
+
+		for (RichiestaIO tempRichiesta : listaRichieste) {
+			if (tempRichiesta.getCilindroRichiesto() > posizioneCorrenteTestina && Math.abs(posizioneCorrenteTestina-tempRichiesta.getCilindroRichiesto()) < distanzaMinore) {
+				distanzaMinore = Math.abs(posizioneCorrenteTestina-tempRichiesta.getCilindroRichiesto());
+				richiestaPiuVicina = tempRichiesta;
+			}
+		}
+		return richiestaPiuVicina;
+	}
+	
+	public RichiestaIO trovaRichiestaPiùVicinaSinistra(int posizioneCorrenteTestina) {
+		int count=0;
+		richiestaPiuVicina = null;
+		for (RichiestaIO tempRichiesta : listaRichieste) {
+			if (tempRichiesta.getCilindroRichiesto() < posizioneCorrenteTestina) {
+				richiestaPiuVicina = tempRichiesta;
+				count++;
+				break;
+			}
+		}
+		if (count == 0) return null;
+		
+		int distanzaMinore = Math.abs(posizioneCorrenteTestina-richiestaPiuVicina.getCilindroRichiesto());
+
+		for (RichiestaIO tempRichiesta : listaRichieste) {
+			if (tempRichiesta.getCilindroRichiesto() < posizioneCorrenteTestina && Math.abs(posizioneCorrenteTestina-tempRichiesta.getCilindroRichiesto()) < distanzaMinore) {
+				distanzaMinore = Math.abs(posizioneCorrenteTestina-tempRichiesta.getCilindroRichiesto());
+				richiestaPiuVicina = tempRichiesta;
+			}
+		}
+		return richiestaPiuVicina;
 	}
 
 }

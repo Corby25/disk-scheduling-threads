@@ -3,7 +3,7 @@ public class RichiestaIO extends Thread{
 	private int cilindroRichiesto;
 	
 	public RichiestaIO() {
-		cilindroRichiesto = (int)Math.random()*10;
+		cilindroRichiesto = (int)(Math.random()*100);
 	}
 
 	public int getCilindroRichiesto() {
@@ -15,7 +15,7 @@ public class RichiestaIO extends Thread{
 	}
 	
 	public void run() {
-		System.out.println(cilindroRichiesto + " ");
+		System.out.print(cilindroRichiesto + " ");
 	}
 
 }
