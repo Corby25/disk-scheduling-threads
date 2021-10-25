@@ -15,9 +15,16 @@ public class Tester {
 			scheduler.aggiungiRichieste(tempRichiesta);
 			System.out.print(tempRichiesta.getCilindroRichiesto() + " ");
 		}
+		
+		System.out.print("\n\nPoisizione iniziale testina: " + testina.getInizio());
 		System.out.print("\n\nLista esecuzione richieste: \n");
 
 		scheduler.run();
+		
+		int spostamentiTotali = scheduler.spostamentiTotali();
+		
+		System.out.println("\n\nNumero complessivo spostamenti:" + spostamentiTotali);
+		System.out.println("Tempo totale spostamenti: " + spostamentiTotali*scheduler.getTempoSpostamento() + "ms");
 	}
 
 }

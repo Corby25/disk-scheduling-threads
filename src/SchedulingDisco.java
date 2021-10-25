@@ -7,15 +7,20 @@ import java.util.ArrayList;
 
 public class SchedulingDisco extends Thread {
 	private int numCilindri = 100;
+	private double tempoSpostamento = 0.1;
+	private int spostamenti;
 	private Testina testina;
 	private ArrayList<RichiestaIO> listaRichieste;
+	private ArrayList<Integer> listaRichiesteEvase;
 	private AlgoritmiTypes algoritmo;
 	private RichiestaIO richiestaPiuVicina;
 	
 	public SchedulingDisco(Testina testina, AlgoritmiTypes algoritmo) {
 		this.testina = testina;
 		this.algoritmo = algoritmo;
+		spostamenti = 0;
 		listaRichieste = new ArrayList<RichiestaIO>();
+		listaRichiesteEvase = new ArrayList<Integer>();
 		richiestaPiuVicina = null;
 		this.start();
 	}
@@ -29,6 +34,7 @@ public class SchedulingDisco extends Thread {
 			synchronized (this) {
 
 				int posizioneCorrenteTestina = testina.getInizio();
+				listaRichiesteEvase.add(posizioneCorrenteTestina);
 
 				switch (algoritmo) {
 				case FCFS:
@@ -36,6 +42,7 @@ public class SchedulingDisco extends Thread {
 
 						for (RichiestaIO tempRichiesta : listaRichieste) {
 							tempRichiesta.start();
+							listaRichiesteEvase.add(tempRichiesta.getCilindroRichiesto());
 							try {
 								tempRichiesta.join();
 							} catch (InterruptedException e) {
@@ -53,6 +60,7 @@ public class SchedulingDisco extends Thread {
 						posizioneCorrenteTestina = richiestaPiuVicina.getCilindroRichiesto();
 						
 						richiestaPiuVicina.start();
+						listaRichiesteEvase.add(richiestaPiuVicina.getCilindroRichiesto());
 						try {
 							richiestaPiuVicina.join();
 						} catch (InterruptedException e) {
@@ -77,6 +85,7 @@ public class SchedulingDisco extends Thread {
 								}
 								
 								richiestaPiuVicina.start();
+								listaRichiesteEvase.add(richiestaPiuVicina.getCilindroRichiesto());
 								try {
 									richiestaPiuVicina.join();
 								} catch (InterruptedException e) {
@@ -94,6 +103,7 @@ public class SchedulingDisco extends Thread {
 								}
 								
 								richiestaPiuVicina.start();
+								listaRichiesteEvase.add(richiestaPiuVicina.getCilindroRichiesto());
 								try {
 									richiestaPiuVicina.join();
 								} catch (InterruptedException e) {
@@ -121,6 +131,7 @@ public class SchedulingDisco extends Thread {
 								}
 								
 								richiestaPiuVicina.start();
+								listaRichiesteEvase.add(richiestaPiuVicina.getCilindroRichiesto());
 								try {
 									richiestaPiuVicina.join();
 								} catch (InterruptedException e) {
@@ -138,6 +149,7 @@ public class SchedulingDisco extends Thread {
 								}
 								
 								richiestaPiuVicina.start();
+								listaRichiesteEvase.add(richiestaPiuVicina.getCilindroRichiesto());
 								try {
 									richiestaPiuVicina.join();
 								} catch (InterruptedException e) {
@@ -154,9 +166,19 @@ public class SchedulingDisco extends Thread {
 
 				}
 			}
-			
 		}
 		
+	}
+	
+	public int spostamentiTotali() {
+		for (int i=1; i<listaRichiesteEvase.size(); i++) {
+			spostamenti += Math.abs(listaRichiesteEvase.get(i)-listaRichiesteEvase.get(i-1));
+		}
+		return spostamenti;
+	}
+	
+	public double getTempoSpostamento( ) {
+		return tempoSpostamento;
 	}
 	
 	public RichiestaIO trovaRichiestaPiùVicina(int posizioneCorrenteTestina) {
